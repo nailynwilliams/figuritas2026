@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TEAMS, STICKER_MAP, stickerKey } from '../data/album';
+import { TEAMS, ORDER, STICKER_MAP, stickerKey } from '../data/album';
 import Tesseract from 'tesseract.js';
 
 const MODES = { manual: 'manual', scan: 'scan', page: 'page' };
@@ -44,81 +44,81 @@ async function getPhoto() {
   });
 }
 
-// Review screen shown after AI scan
+// Review screen: full team grid, tap to toggle missing/owned
 function PageReview({ missing, onConfirm, onCancel }) {
+  // Detect teams from missing codes
+  const detectedTeams = [...new Set(missing.map(teamFromCode).filter(Boolean))].filter(t => TEAMS[t]);
+  const [selectedTeam, setSelectedTeam] = useState(detectedTeams[0] || null);
+  // missingSet = stickers the user says they DON'T have (red = missing)
   const [missingSet, setMissingSet] = useState(() => new Set(missing));
-  const [addInput, setAddInput] = useState('');
 
-  // Group by team
-  const byTeam = {};
-  [...missingSet].forEach(c => {
-    const t = teamFromCode(c);
-    if (t) { if (!byTeam[t]) byTeam[t] = []; byTeam[t].push(c); }
-  });
+  const team = selectedTeam ? TEAMS[selectedTeam] : null;
 
-  // Calculate what will be marked as owned
-  const ownedByTeam = {};
-  Object.entries(byTeam).forEach(([t, missing]) => {
-    const team = TEAMS[t];
-    if (!team) return;
-    const missingKeys = new Set(missing);
-    ownedByTeam[t] = team.stickers
-      .map(s => stickerKey(t, s.num))
-      .filter(k => !missingKeys.has(k) && STICKER_MAP[k]);
-  });
-  const totalOwned = Object.values(ownedByTeam).flat().length;
-
-  const remove = (code) => setMissingSet(prev => { const s = new Set(prev); s.delete(code); return s; });
-
-  const addMissing = () => {
-    const code = parseCode(addInput);
-    if (code && STICKER_MAP[code]) {
-      setMissingSet(prev => new Set([...prev, code]));
-      setAddInput('');
-    }
+  const toggle = (key) => {
+    setMissingSet(prev => {
+      const s = new Set(prev);
+      if (s.has(key)) s.delete(key); else s.add(key);
+      return s;
+    });
   };
 
-  const teamNames = Object.keys(byTeam).map(t => TEAMS[t]?.name || t).join(', ');
+  const owned = team
+    ? team.stickers.map(s => stickerKey(selectedTeam, s.num)).filter(k => !missingSet.has(k) && STICKER_MAP[k])
+    : [];
+
+  const ownedByTeam = selectedTeam ? { [selectedTeam]: owned } : {};
+
+  // If no team was detected, show team picker from ORDER
+  if (!selectedTeam) {
+    return (
+      <div className="page-review">
+        <h3 className="review-title">¿Qué equipo es esta página?</h3>
+        <p className="review-label">La IA no detectó el equipo. Seleccionalo:</p>
+        <div className="review-team-grid">
+          {ORDER.map(code => (
+            <button key={code} className="review-team-btn" onClick={() => setSelectedTeam(code)}>
+              <span>{TEAMS[code].flag}</span><span>{code}</span>
+            </button>
+          ))}
+        </div>
+        <button className="btn-secondary" onClick={onCancel}>Cancelar</button>
+      </div>
+    );
+  }
 
   return (
     <div className="page-review">
-      <h3 className="review-title">Revisá antes de confirmar</h3>
-      {teamNames && <p className="review-team">Equipo detectado: <strong>{teamNames}</strong></p>}
-
-      <div className="review-section">
-        <p className="review-label">📭 Faltan ({missingSet.size}) — tocá para quitar si está mal:</p>
-        {missingSet.size === 0
-          ? <p className="review-empty">Ninguna (página completa)</p>
-          : <div className="review-tags">
-              {[...missingSet].sort().map(c => (
-                <button key={c} className="review-tag" onClick={() => remove(c)}>{c} ✕</button>
-              ))}
-            </div>
-        }
+      <div className="review-header">
+        <span className="review-team-flag">{team.flag}</span>
+        <div>
+          <h3 className="review-title">{team.name}</h3>
+          <p className="review-label">Verde = tengo · Rojo = me falta · Tocá para cambiar</p>
+        </div>
+        <button className="review-change-team" onClick={() => setSelectedTeam(null)}>Cambiar</button>
       </div>
 
-      <div className="review-add">
-        <p className="review-label">¿Falta alguna más? Agregala:</p>
-        <div className="review-add-row">
-          <input
-            className="code-input-sm"
-            value={addInput}
-            onChange={e => setAddInput(e.target.value)}
-            placeholder="ej: MEX7"
-            autoCapitalize="characters"
-            maxLength={7}
-            onKeyDown={e => e.key === 'Enter' && addMissing()}
-          />
-          <button className="btn-secondary" onClick={addMissing}>Agregar</button>
-        </div>
+      <div className="review-grid">
+        {team.stickers.map(s => {
+          const key = stickerKey(selectedTeam, s.num);
+          const isMissing = missingSet.has(key);
+          return (
+            <button
+              key={key}
+              className={`review-cell ${isMissing ? 'missing' : 'owned'}`}
+              onClick={() => toggle(key)}
+            >
+              <span className="review-cell-num">{key}</span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="review-summary">
-        ✅ Se marcarán como <strong>tengo</strong>: {totalOwned} figuritas
+        ✅ <strong>{owned.length}</strong> tengo &nbsp;·&nbsp; 📭 <strong>{missingSet.size}</strong> me falta
       </div>
 
       <div className="review-actions">
-        <button className="btn-primary" onClick={() => onConfirm(missingSet, ownedByTeam)} disabled={totalOwned === 0}>
+        <button className="btn-primary" onClick={() => onConfirm(missingSet, ownedByTeam)} disabled={owned.length === 0}>
           Confirmar
         </button>
         <button className="btn-secondary" onClick={onCancel}>Volver a escanear</button>
