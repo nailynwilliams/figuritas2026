@@ -95,15 +95,15 @@ export default function AddSticker({ onAdd }) {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ image: dataUrl }),
       });
-      const { codes, error: apiErr } = await res.json();
+      const { owned, empty, error: apiErr } = await res.json();
       if (apiErr) throw new Error(apiErr);
-      if (!codes || codes.length === 0) {
-        setStatus('No detecté figuritas. Intentá con más luz y la página derecha.');
+      if (!owned || owned.length === 0) {
+        setStatus('No detecté ninguna página de equipo. Intentá con más luz y la página bien encuadrada.');
       } else {
-        const valid = codes.filter(c => STICKER_MAP[c]);
+        // Add all owned stickers (only increments if not already owned)
         let added = 0;
-        valid.forEach(c => { if (onAdd(c).success) added++; });
-        setPageResults({ found: codes, valid, added });
+        owned.forEach(c => { if (STICKER_MAP[c] && onAdd(c).success) added++; });
+        setPageResults({ owned, empty: empty || [], added });
         setStatus('');
       }
     } catch (e) {
@@ -186,11 +186,11 @@ export default function AddSticker({ onAdd }) {
             {pageResults && (
               <div className="page-results">
                 <p className="page-results-title">✅ {pageResults.added} figuritas marcadas</p>
-                <p className="page-results-codes">{pageResults.valid.join(', ')}</p>
-                {pageResults.found.length > pageResults.valid.length && (
-                  <p className="page-results-skip">
-                    Ignoradas (no existen): {pageResults.found.filter(c => !STICKER_MAP[c]).join(', ')}
-                  </p>
+                {pageResults.empty.length > 0 && (
+                  <p className="page-results-skip">📭 Faltan: {pageResults.empty.join(', ')}</p>
+                )}
+                {pageResults.empty.length === 0 && (
+                  <p className="page-results-codes">¡Página completa!</p>
                 )}
               </div>
             )}
