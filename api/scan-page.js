@@ -25,12 +25,20 @@ export default async function handler(req, res) {
           },
           {
             type: 'text',
-            text: `Esta es una foto de páginas del álbum Panini FIFA World Cup 2026.
-Identificá todos los códigos de figuritas visibles. Los códigos tienen el formato: 2-4 letras mayúsculas seguidas de 1-3 números. Ejemplos: BRA14, ARG3, MEX11, FWC1, FWC00, CUW5, ESP20.
-Los equipos posibles son: FWC, MEX, RSA, KOR, CZE, CAN, BIH, QAT, SUI, BRA, MAR, HAI, SCO, USA, PAR, AUS, TUR, GER, CUW, CIV, ECU, NED, JPN, SWE, TUN, BEL, EGY, IRN, NZL, ESP, CPV, KSA, URU, FRA, SEN, IRQ, NOR, ARG, ALG, AUT, JOR, POR, COD, UZB, COL, ENG, CRO, GHA, PAN.
-Cada equipo tiene figuritas del 1 al 20. FWC va del 00 al 19.
-Respondé SOLO con una lista de códigos separados por comas, sin explicación. Ejemplo: BRA1,BRA2,BRA14,ARG3
-Si no ves ningún código claro, respondé con: NINGUNO`,
+            text: `Esta es una foto de una o más páginas del álbum Panini FIFA World Cup 2026.
+
+IMPORTANTE: El álbum tiene casillas impresas que muestran el código (ej: MEX1, BRA14) aunque no tengan figurita pegada. NO me interesa esas casillas vacías.
+
+Solo me interesan las casillas que tienen una FIGURITA PEGADA ENCIMA, es decir, donde se ve la foto del jugador, el escudo, o la imagen de la figurita real (no el fondo impreso del álbum).
+
+Para cada figurita pegada que veas, identificá su código usando:
+- El número/código impreso EN LA PROPIA FIGURITA (muchas lo tienen en la esquina o al pie)
+- El nombre del jugador y el equipo/bandera visible en la figurita
+- Los equipos posibles: FWC, MEX, RSA, KOR, CZE, CAN, BIH, QAT, SUI, BRA, MAR, HAI, SCO, USA, PAR, AUS, TUR, GER, CUW, CIV, ECU, NED, JPN, SWE, TUN, BEL, EGY, IRN, NZL, ESP, CPV, KSA, URU, FRA, SEN, IRQ, NOR, ARG, ALG, AUT, JOR, POR, COD, UZB, COL, ENG, CRO, GHA, PAN
+- Cada equipo tiene figuritas del 1 al 20. FWC va del 00 al 19.
+
+Respondé SOLO con los códigos de las figuritas PEGADAS, separados por comas. Sin explicación. Ejemplo: BRA1,BRA14,ARG3
+Si no hay ninguna figurita pegada visible, respondé: NINGUNO`,
           },
         ],
       }],
