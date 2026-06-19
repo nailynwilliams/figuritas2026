@@ -1,5 +1,9 @@
 {
   "appId": "com.mundial2026.figuritas",
   "appName": "Mundial 2026",
-  "webDir": "dist"
+  "webDir": "dist",
+  "server": {
+    "url": "https://figuritas-2026-omega.vercel.app",
+    "cleartext": false
+  }
 }
