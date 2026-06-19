@@ -1,136 +1,111 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { STICKER_MAP } from '../data/album';
 import Tesseract from 'tesseract.js';
 
 const MODES = { manual: 'manual', scan: 'scan' };
 
 function parseCode(raw) {
-  // Handles: FWC00, FWC1-FWC19, CUW01-CUW20, JPN01-JPN20, MEX1-MEX20 etc.
   const match = raw.toUpperCase().match(/[A-Z]{2,4}\d{1,3}/);
   return match ? match[0] : null;
+}
+
+async function openNativeCamera() {
+  // Capacitor native camera
+  try {
+    const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera');
+    const photo = await Camera.getPhoto({
+      quality: 90,
+      resultType: CameraResultType.DataUrl,
+      source: CameraSource.Camera,
+      allowEditing: false,
+    });
+    return photo.dataUrl;
+  } catch {
+    return null;
+  }
+}
+
+async function openBrowserCamera() {
+  // Fallback: file input (works on browser/iOS)
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'environment';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) { resolve(null); return; }
+      const reader = new FileReader();
+      reader.onload = (ev) => resolve(ev.target.result);
+      reader.readAsDataURL(file);
+    };
+    input.oncancel = () => resolve(null);
+    input.click();
+  });
+}
+
+async function getPhoto() {
+  // Try native Capacitor first, fall back to file input
+  const isCapacitor = typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.();
+  if (isCapacitor) {
+    return openNativeCamera();
+  }
+  return openBrowserCamera();
 }
 
 export default function AddSticker({ onAdd }) {
   const [mode, setMode] = useState(MODES.manual);
   const [input, setInput] = useState('');
-  const [scanning, setScanning] = useState(false);
   const [ocrStatus, setOcrStatus] = useState('');
   const [lastAdded, setLastAdded] = useState(null);
   const [error, setError] = useState('');
-  const [stream, setStream] = useState(null);
+  const [scanning, setScanning] = useState(false);
 
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const intervalRef = useRef(null);
-
-  // --- Manual mode ---
   const handleManualSubmit = (e) => {
     e.preventDefault();
     const code = parseCode(input);
-    if (!code) {
-      setError('Código inválido. Ejemplo: BRA14');
-      return;
-    }
-    if (!STICKER_MAP[code]) {
-      setError(`No existe la figurita "${code}"`);
-      return;
-    }
+    if (!code) { setError('Código inválido. Ejemplo: BRA14'); return; }
+    if (!STICKER_MAP[code]) { setError(`No existe la figurita "${code}"`); return; }
     const result = onAdd(code);
-    if (result.success) {
-      setLastAdded(result.sticker);
-      setError('');
-      setInput('');
-    }
+    if (result.success) { setLastAdded(result.sticker); setError(''); setInput(''); }
   };
 
-  // --- Scanner mode ---
-  const startCamera = useCallback(async () => {
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: 640, height: 480 },
-      });
-      setStream(s);
-      if (videoRef.current) {
-        videoRef.current.srcObject = s;
-        videoRef.current.play();
-      }
-      setScanning(true);
-      setOcrStatus('Apuntá la cámara al código de la figurita');
-    } catch {
-      setError('No se pudo acceder a la cámara. Activá los permisos.');
+  const handleScan = async () => {
+    setScanning(true);
+    setOcrStatus('Abriendo cámara…');
+    setError('');
+
+    const dataUrl = await getPhoto();
+    if (!dataUrl) {
+      setOcrStatus('');
+      setScanning(false);
+      return;
     }
-  }, []);
-
-  const stopCamera = useCallback(() => {
-    if (stream) stream.getTracks().forEach(t => t.stop());
-    setStream(null);
-    setScanning(false);
-    setOcrStatus('');
-    if (intervalRef.current) clearInterval(intervalRef.current);
-  }, [stream]);
-
-  const captureAndOCR = useCallback(async () => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas || video.readyState < 2) return;
-
-    const ctx = canvas.getContext('2d');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0);
 
     setOcrStatus('Leyendo código…');
     try {
-      const { data } = await Tesseract.recognize(canvas, 'eng', {
-        logger: () => {},
-      });
+      const { data } = await Tesseract.recognize(dataUrl, 'eng', { logger: () => {} });
       const code = parseCode(data.text);
       if (code && STICKER_MAP[code]) {
         setOcrStatus(`✅ Detectado: ${code}`);
         const result = onAdd(code);
-        if (result.success) {
-          setLastAdded(result.sticker);
-          stopCamera();
-        }
+        if (result.success) setLastAdded(result.sticker);
       } else {
-        setOcrStatus('No detecté código. Acercá más la cámara al texto del dorso.');
+        setOcrStatus('No detecté código. Intentá de nuevo con mejor luz.');
       }
     } catch {
       setOcrStatus('Error al leer. Intentá de nuevo.');
     }
-  }, [onAdd, stopCamera]);
-
-  useEffect(() => {
-    if (scanning) {
-      intervalRef.current = setInterval(captureAndOCR, 2500);
-    }
-    return () => clearInterval(intervalRef.current);
-  }, [scanning, captureAndOCR]);
-
-  useEffect(() => {
-    return () => {
-      if (stream) stream.getTracks().forEach(t => t.stop());
-      clearInterval(intervalRef.current);
-    };
-  }, [stream]);
-
-  useEffect(() => {
-    if (mode === MODES.manual) stopCamera();
-  }, [mode]); // eslint-disable-line
+    setScanning(false);
+  };
 
   return (
     <div className="add-page">
       <div className="mode-tabs">
-        <button
-          className={`mode-tab ${mode === MODES.manual ? 'active' : ''}`}
-          onClick={() => setMode(MODES.manual)}
-        >
+        <button className={`mode-tab ${mode === MODES.manual ? 'active' : ''}`} onClick={() => setMode(MODES.manual)}>
           ✏️ Manual
         </button>
-        <button
-          className={`mode-tab ${mode === MODES.scan ? 'active' : ''}`}
-          onClick={() => setMode(MODES.scan)}
-        >
+        <button className={`mode-tab ${mode === MODES.scan ? 'active' : ''}`} onClick={() => setMode(MODES.scan)}>
           📷 Escanear
         </button>
       </div>
@@ -172,28 +147,15 @@ export default function AddSticker({ onAdd }) {
 
       {mode === MODES.scan && (
         <div className="scan-mode">
-          {!scanning ? (
-            <div className="scan-start">
-              <div className="scan-icon">📷</div>
-              <p>Apuntá la cámara al <strong>dorso</strong> de la figurita donde está el código (ej: BRA14)</p>
-              <button className="btn-primary" onClick={startCamera}>
-                Abrir cámara
-              </button>
-              {error && <p className="add-error">{error}</p>}
-            </div>
-          ) : (
-            <div className="scan-active">
-              <div className="video-wrap">
-                <video ref={videoRef} className="scan-video" playsInline muted autoPlay />
-                <div className="scan-overlay">
-                  <div className="scan-frame" />
-                </div>
-              </div>
-              <canvas ref={canvasRef} style={{ display: 'none' }} />
-              <p className="ocr-status">{ocrStatus}</p>
-              <button className="btn-secondary" onClick={stopCamera}>Cancelar</button>
-            </div>
-          )}
+          <div className="scan-start">
+            <div className="scan-icon">📷</div>
+            <p>Sacá una foto al <strong>dorso</strong> de la figurita donde está el código (ej: BRA14)</p>
+            <button className="btn-primary" onClick={handleScan} disabled={scanning}>
+              {scanning ? 'Procesando…' : 'Abrir cámara'}
+            </button>
+            {ocrStatus && <p className="ocr-status">{ocrStatus}</p>}
+            {error && <p className="add-error">{error}</p>}
+          </div>
         </div>
       )}
     </div>
