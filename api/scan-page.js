@@ -27,28 +27,27 @@ export default async function handler(req, res) {
           },
           {
             type: 'text',
-            text: `Esta es una foto de una o más páginas del álbum Panini FIFA World Cup 2026.
+            text: `Esta es una foto de una página del álbum Panini FIFA World Cup 2026.
 
-Tu tarea: identificar las casillas VACÍAS (donde NO hay figurita pegada y se ve el código impreso en el fondo del álbum, como MEX7, MEX11, MEX20).
+PASO 1: ¿Qué equipo(s) ves claramente en esta foto? Solo reportá equipos cuyo nombre o bandera se ve EXPLÍCITAMENTE en la imagen. Si no ves claramente el nombre del equipo, no lo incluyas.
 
-Las casillas que SÍ tienen figurita pegada muestran la foto del jugador tapando el fondo — esas NO las listes.
+PASO 2: Para cada equipo que identificaste con certeza, mirá sus casillas en la foto e identificá cuáles están VACÍAS (se ve el código impreso en el fondo del álbum porque no hay figurita pegada encima).
 
-Lógica de uso: si el equipo tiene 20 casillas y las vacías son MEX7, MEX11 y MEX20, entonces el usuario tiene las otras 17 figuritas de ese equipo.
+REGLAS ESTRICTAS:
+- Solo reportá el/los equipo(s) que realmente aparece(n) en la foto
+- NO inventes ni asumas equipos que no estén visibles
+- Una casilla vacía es donde se ve el código impreso (ej: MEX7) sin figurita encima
+- Una casilla llena tiene foto del jugador tapando el fondo
 
-Equipos posibles: FWC (figuritas 00-19), y todos estos con figuritas 1-20: MEX, RSA, KOR, CZE, CAN, BIH, QAT, SUI, BRA, MAR, HAI, SCO, USA, PAR, AUS, TUR, GER, CUW, CIV, ECU, NED, JPN, SWE, TUN, BEL, EGY, IRN, NZL, ESP, CPV, KSA, URU, FRA, SEN, IRQ, NOR, ARG, ALG, AUT, JOR, POR, COD, UZB, COL, ENG, CRO, GHA, PAN.
-
-Respondé en este formato exacto (un bloque por equipo):
+Respondé SOLO en este formato (un bloque por equipo visible):
 EQUIPO:MEX
 VACIAS:MEX7,MEX11,MEX20
 
-Si hay varios equipos en la foto, repetí el bloque:
+Si la página está completamente llena sin casillas vacías:
 EQUIPO:MEX
-VACIAS:MEX7,MEX11,MEX20
-EQUIPO:BRA
-VACIAS:BRA3,BRA15
+VACIAS:
 
-Si una página de equipo está completamente llena, ponés VACIAS: (vacío).
-Si no podés identificar nada con claridad, respondé: NINGUNO`,
+Si no podés identificar ningún equipo con claridad: NINGUNO`,
           },
         ],
       }],
