@@ -368,6 +368,20 @@ html, body, #root {
 .sent-list { font-size: 13px; color: var(--coral); }
 .sent-note { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
 
+/* ===== RESET SECTION ===== */
+.reset-section { width: 100%; text-align: center; padding-top: 8px; }
+.btn-reset {
+  background: none; border: 1px solid var(--border);
+  color: var(--text-muted); padding: 10px 20px;
+  border-radius: var(--radius); cursor: pointer; font-size: 13px;
+  transition: all .15s;
+}
+.btn-reset:hover { border-color: var(--red); color: var(--red); }
+.reset-confirm { background: var(--surface); border: 1px solid var(--red); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.reset-confirm p { font-size: 14px; color: var(--text); }
+.reset-confirm-btns { display: flex; gap: 10px; }
+.btn-reset-confirm { flex: 1; padding: 10px; border-radius: var(--radius); background: var(--red); color: #fff; border: none; cursor: pointer; font-size: 14px; font-weight: 700; }
+
 /* ===== PAGE SCAN RESULTS ===== */
 .page-results {
   background: var(--surface); border: 1px solid var(--green);

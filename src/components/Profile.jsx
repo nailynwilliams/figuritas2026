@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
 import { STICKER_MAP } from '../data/album';
 
-export default function Profile({ profile, saveProfile, collection }) {
+export default function Profile({ profile, saveProfile, collection, onReset }) {
   const [editing, setEditing] = useState(!profile.name);
+  const [confirmReset, setConfirmReset] = useState(false);
   const [name, setName] = useState(profile.name || '');
   const [qrUrl, setQrUrl] = useState('');
   const canvasRef = useRef(null);
@@ -82,6 +83,26 @@ export default function Profile({ profile, saveProfile, collection }) {
             <button className="btn-secondary" onClick={handleShare}>
               Compartir mi perfil
             </button>
+          </div>
+
+          <div className="reset-section">
+            {!confirmReset ? (
+              <button className="btn-reset" onClick={() => setConfirmReset(true)}>
+                🗑️ Reiniciar álbum
+              </button>
+            ) : (
+              <div className="reset-confirm">
+                <p>¿Segura? Se borran <strong>todas</strong> las figuritas marcadas.</p>
+                <div className="reset-confirm-btns">
+                  <button className="btn-reset-confirm" onClick={() => { onReset(); setConfirmReset(false); }}>
+                    Sí, borrar todo
+                  </button>
+                  <button className="btn-secondary" onClick={() => setConfirmReset(false)}>
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}

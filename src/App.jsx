@@ -19,7 +19,7 @@ const TABS = [
 ];
 
 export default function App() {
-  const { collection, addSticker, removeSticker, getStatus, getCount, stats } = useAlbum();
+  const { collection, addSticker, removeSticker, getStatus, getCount, stats, resetCollection } = useAlbum();
   const { profile, saveProfile } = useProfile();
   const [tab, setTab] = useState('stats');
   const [modal, setModal] = useState(null);
@@ -59,7 +59,7 @@ export default function App() {
         {tab === 'album'   && <Album getStatus={getStatus} getCount={getCount} onStickerTap={handleStickerTap} filter={null} />}
         {tab === 'add'     && <AddSticker onAdd={addSticker} />}
         {tab === 'dupes'   && <Duplicates collection={collection} onStickerTap={handleStickerTap} />}
-        {tab === 'profile' && <Profile profile={profile} saveProfile={saveProfile} collection={collection} />}
+        {tab === 'profile' && <Profile profile={profile} saveProfile={saveProfile} collection={collection} onReset={resetCollection} />}
       </main>
 
       <nav className="bottom-nav">

@@ -81,7 +81,11 @@ export function useAlbum() {
     return { total, owned, missing, duplicates, percent: Math.round((owned / total) * 100) };
   })();
 
-  return { collection, addSticker, removeSticker, setCount, getStatus, getCount, stats };
+  const resetCollection = useCallback(() => {
+    setCollection({});
+  }, []);
+
+  return { collection, addSticker, removeSticker, setCount, getStatus, getCount, stats, resetCollection };
 }
 
 export function useProfile() {
